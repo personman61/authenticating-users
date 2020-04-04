@@ -1,60 +1,34 @@
-# User Authentication: Lesson 1: Preliminaries
+# Lesson 1: Preliminaries
 
-I have supplied you with some code that implements a ticket server and client, nearly identical to what we have done previously. The front end in the `public` directory uses Vue. The back end in the `server` directory uses Node, Express, and Mongo.
+I have supplied you with some code that has an empty ticket server and a bare-bones client that shows only a home page. The back end is in the `back-end` directory and the
+front end is in the `front-end` directory. (Surprise!)
+
+These tutorials will show you how to build an application that uses authentication,
+from the ground up. The back end will use Node, Express, and Mongo, and the front
+end uses Vue CLI.
 
 To get this code running, you'll need to clone this repository.
 
-After you do this, initialize Node and install some packages:
+If you are using nvm:
 
 ```
 nvm use stable
-cd user-authentication
-npm init
-npm install express mongoose jsonwebtoken cookie-parser
-
 ```
 
-You can then run the server and the app should let you create and delete tickets:
+Start by looking at the front end:
 
 ```
-cd server
-node server.js
+cd front-end
+npm install
+npm run serve
 ```
 
-## Modules
+If you browse to `localhost:8080`, you should see:
 
-If you examine the code in the `server directory`, you'll notice that I have refactored the server into separate modules.
+![home page](/screenshots/home.png)
 
-Inside of `server.js`, we require the `tickets.js` module. Notice we have to give it a relative path by starting with the current directory, which is `.`
+I have created a home page for you, with a logo across the top and forms for registration and login. This mimics a popular style for web applications. These forms are currently do not have event handlers.
 
-```
-const tickets = require("./tickets.js");
-app.use("/api/tickets", tickets);
-```
+If you dive into the code, you will see that `App.vue` has the branding, so it appears on every page. The `Home.vue` view uses a `HomePage` component for the front page. We are starting with a component here because we are going to eventually replace the home page view with different content if the user is logged in.
 
-We also call `app.use` to configure the API and in one place we declare that all endpoints regarding tickets will use the prefix `/api/tickets`.
-
-Now, inside of `tickets.js`, we store all of our code related to the ticket schema, model, and API. It starts with:
-
-```
-const express = require("express");
-const router = express.Router();
-```
-
-We then define our routes like this:
-
-```
-router.get('/', async (req, res) => {
-router.post('/', async (req, res) => {
-router.post('/', async (req, res) => {
-```
-
-And then at the end we export the router:
-
-```
-module.exports = router;
-```
-
-Exporting the router is what allows the server to include and then use it.
-
-Organizing our back end code into modules will make it easier to maintain.
+Kindly proceed to [Lesson 2](/tutorials/lesson2.md).

@@ -1,133 +1,182 @@
-# User Authentication: Lesson 4: Registration
+# Lesson 4: Staying logged in with cookies
 
-We have the API needed to create accounts, so now we can create a registration and login system.
+If you refresh the browser, you'll notice that you will lose all state about the user. We are going to use cookies to keep the user logged in. The cookie will store the user's login information, and they can present this at any time to the back end to prove that they are logged in. Browsers store cookies persistently, so they are not lost when the page is refreshed.
 
-We're going to create a registration and login system that pops up a dialog box when the user needs to register or login, instead of using a separate page for these.
+## Cookies
 
-## Header
+Cookies are used in HTTP to send small amounts of data from a web browser to a web server. For example, a cookie can contain an
+identifier that is unique to that web browser, so the server can keep track of a shopping cart, a user account, or other state.
 
-We'll start with a modification to the header in `public/index.html`
+Setting a cookie is done by request of the web server. First, the web server tells the web browser to "set" a cookie. This request
+includes an expiration time. Then, in every subsequent request it sends to the web server, the browser will include this data in a cookie
+as long as it has not expired. The server can then use this data to find the state it associates with that browser.
 
-```
-  <div class="header">
-    <h1>Ticket System</h1>
-    <p v-if="user">Welcome {{user.username}}<br><a href="#" @click="logout">Logout</a></p>
-    <p v-else><a href="#" @click="toggleForm">Register or Login</a></p>
-  </div>
-```
-
-Let's add the variables we need in `public/script.js`:
+Here is an example of a server sending a header in an HTTP request, asking the web browser to set a cookie:
 
 ```
-  data: {
-    showForm: false,
-    user: null,
-    username: '',
-    password: '',
-    error: '',
+Set-Cookie: qwerty=219ffwef9w0f; Domain=somecompany.com; Path=/; Expires=Wed, 30 Aug 2020 00:00:00 GMT
 ```
 
-and some blank methods in `public/script.js`:
+Here is what the web browser will send back every in every request it sends subsequently to the site, as long as the cookie is not expired:
 
 ```
-  methods: {
-    toggleForm() {},
-    async register() {},
-    async login() {},
-    async logout() {},
-    async getUser() {},
+Cookie: qwerty=219ffwef9w0f; Domain=somecompany.com; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT
 ```
 
-You should be able to run the server:
+In our case, the back end will first validate a user when they login with a username and password. On successful validation, the back end will set a cookie that stores a unique identifier. When the browser sends that cookie in subsequent API requests, the back end will use that identifier to look up the associated user record to confirm their identity.
+
+## Back end
+
+We are going to use some Express modules that make dealing with cookies really simple: the `cookie-parser` and `cookie-session` libraries:
 
 ```
-node server.js
+cd back-end
+npm install cookie-parser cookie-session
 ```
 
-and see a `Register or Login` link:
+The `cookie-parser` library parses the cookies coming in on requests. The `cookie-session` library is a lightweight way to store session information in a cookie. A session is a persistent connection from a browser to your website. This module will automatically set cookies for us and allow us to use `req.session` to keep track of session state for each incoming request.
 
-![Register or Login link](/screenshots/login.png)
+In `server.js`, include and use the libraries:
 
-## Modal Dialog
+```javascript
+// connect to the mongodb database
+mongoose.connect('mongodb://localhost:27017/pagliaccio', {
+  useNewUrlParser: true
+});
 
-To create the dialog for this system, add the following to `public/index.html`:
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
 
-```
-<transition v-if="showForm" name="modal">
-      <div class="modal-mask">
-        <div class="modal-wrapper">
-          <div class="modal-container">
-
-            <div class="modal-header">
-              <h1 class="modal-title">Register or Login</h1>
-            </div>
-            <div class="modal-body">
-              <p v-if="error" class="error">{{error}}</p>
-              <label>Username</label>
-              <br>
-              <input v-model="username">
-              <br>
-              <label>Password</label>
-              <br>
-              <input type="password" v-model="password">
-            </div>
-            <div class="modal-footer">
-              <button @click="register" type="button">Register</button>
-              <button @click="login" type="button" class="other">Login</button>
-              <button @click="toggleForm" type="button" class="close">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </transition>
-```
-
-This uses new HTML element called `transition` that Vue uses to make it easier to add CSS transitions to elements.
-
-Otherwise, this is just a variety of nested `div` elements, with the inputs needed to ask the user for a username and password, plus buttons to register, login, or close the form.
-
-Now we can add the code for toggling the display of the form in `public/script.js`:
-
-```
-    toggleForm() {
-      this.error = "";
-      this.username = "";
-      this.password = "";
-      this.showForm = !this.showForm;
-    },
-```
-
-With these changes, you can reload the web page and see the form open with the Register/Login link and close with the Close button:
-
-![registration form](/screenshots/registration-form.png)
-
-## Register button
-
-Now we can add the code to make our register button work:
-
-```
-    async register() {
-      this.error = "";
-      try {
-        let response = await axios.post("/api/users", {
-          username: this.username,
-          password: this.password
-        });
-        this.user = response.data;
-        // close the dialog
-        this.toggleForm();
-      } catch (error) {
-        this.error = error.response.data.message;
-      }
+const cookieSession = require('cookie-session');
+app.use(cookieSession({
+    name: 'session',
+    keys: ['secretValue'],
+    cookie: {
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
+}));
 ```
 
-We use the `axios` library to send the post request, then take the response and set the user from the JSON data. We also close the dialog.
+### Middleware to authenticate users
 
-An important part of this method is that we expect a `message` field in the response data if an error occurs. We keep a variable called `error` that stores any error, and this is shown on the form with a `v-if` directive.
+Next, we're going to write a piece of middleware to validate Users with their session information. In `users.js`, find the start of the API endpoints. **After** the User model, but **before** the endpoints, add this function:
 
-With these changes, you can reload the web page and try registering for accounts. You should try registering for the same username and try leaving the entire form blank, so you can see the errors working.
+```javascript
+/* Middleware */
 
-![registration success](/screenshots/registration-success.png)
+// middleware function to check for logged-in users
+const validUser = async (req, res, next) => {
+  if (!req.session.userID)
+    return res.status(403).send({
+      message: "not logged in"
+    });
+  try {
+    const user = await User.findOne({
+      _id: req.session.userID
+    });
+    if (!user) {
+      return res.status(403).send({
+        message: "not logged in"
+      });
+    }
+    // set the user field in the request
+    req.user = user;
+  } catch (error) {
+    // Return an error if user does not exist.
+    return res.status(403).send({
+      message: "not logged in"
+    });
+  }
 
-Note, if you refresh the page, then the user account is gone and you have to register again. To fix this, we need to provide login functionality.
+  // if everything succeeds, move to the next middleware
+  next();
+};
+```
+
+This middleware will receive an incoming request from a browser and check whether `req.session.userID` exists. If not, the user is not logged in, so it returns a 403 error. Then it uses this userID to find the user's document in the database. If that doesn't exist, it also returns a 403 errors. Otherwise, it sets `req.user` so that any endpoint can use this to get the current logged in user, then calls `next()`, which passes control to the next middleware.
+
+### Logging in users (and setting cookies)
+
+In `users.js`, find the registration endpoint (it uses POST and the `/` path), and modify it to include one additional line:
+
+```javascript
+// set user session info
+req.session.userID = user._id;
+// send back a 200 OK response, along with the user that was created
+return res.send({
+  user: user
+});
+```
+
+This line saves the user's `_id` from the Mongo DB document into the session for this user.
+
+Do the same thing in the login endpoint (it uses POST and the `/login` path):
+
+```javascript
+  // set user session info
+  req.session.userID = user._id;
+  return res.send({
+    user: user
+  });
+```
+
+Notice that we treat registration and login the same -- either way, the user is automatically logged in when done, and we keep track of their user document in their session state.
+
+Now add a new endpoint:
+
+```javascript
+// get logged in user
+router.get('/', validUser, async (req, res) => {
+  try {
+    res.send({
+      user: req.user
+    });
+  } catch (error) {
+    console.log(error);
+    return res.sendStatus(500);
+  }
+});
+```  
+
+When we use the middleware, `validUser` in this way, we are requiring users to be logged in before they can make this API call. Users who are not logged in will get a 403 error. Any user who *is* logged in will get their user document.
+
+### Module exports
+
+Last, modify the module exports to include the `validUser` middleware:
+
+```javascript
+module.exports = {
+  routes: router,
+  model: User,
+  valid: validUser
+};
+```
+
+This will allow other modules to use the middleware to check for valid users.
+
+## Front End
+
+To use this on the front end, add a `created()` hook in `Home.vue`, right above the computed property:
+
+```javascript
+  async created() {
+    try {
+      let response = await axios.get('/api/users');
+      this.$root.$data.user = response.data.user;
+    } catch (error) {
+      this.$root.$data.user = null;
+    }
+  },
+```
+
+This uses `axios` to access this new endpoint at `GET /api/users` to get the currently logged in user, and if found, set the user state in the global data storage so all components can use it.
+
+**If you refresh the page, you should see that you can stay logged in.**
+
+You can use the `Storage` tab on Firefox to see them:
+
+![cookies](/screenshots/cookies.png)
+
+If you right click on these you can delete them, refresh the page, and verify that you are no longer logged in.
+
+Kindly proceed to [Lesson 5](/tutorials/lesson5.md).

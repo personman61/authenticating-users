@@ -449,6 +449,22 @@ new Vue({
 }).$mount('#app')
 ```
 
+### Connecting the front end and back end
+
+For the front end to talk to the back end, we need to configure the Vue development server with a proxy. Create a file called `vue.config.js` that includes:
+
+```javascript
+module.exports = {
+  devServer: {
+    proxy: {
+      '^/api': {
+        target: 'http://localhost:3000',
+      },
+    }
+  }
+}
+```
+
 ## Testing
 
 Let's see if our front end is wired up with our back end correctly. Keep the back end server running in one terminal:

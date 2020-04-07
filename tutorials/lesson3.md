@@ -375,9 +375,25 @@ cd front-end
 npm install axios
 ```
 
+### Global data
+
+Since we want to store the currently logged in user in global data, modify `main.js` so it has the following:
+
+```javascript
+let data = {
+  user: null
+}
+
+new Vue({
+  data,
+  router,
+  render: h => h(App)
+}).$mount('#app')
+```
+
 ### Registration event handler
 
-Next, add an event handler for the registration form:
+Next, add an event handler in `HomePage.vue` for the registration form:
 
 ```javascript
   methods: {
@@ -410,7 +426,7 @@ Notice that we handle any errors by getting the error message returned from the 
 
 ### Login event handler
 
-Now add a login event handler:
+Now add a login event handler in `HomePage.vue`:
 
 ```javascript
 async login() {
@@ -432,22 +448,6 @@ async login() {
 ```
 
 This is very similar to the registration event handler.
-
-### Global data
-
-Since we want to store the currently logged in user in global data, modify `main.js` so it has the following:
-
-```javascript
-let data = {
-  user: null
-}
-
-new Vue({
-  data,
-  router,
-  render: h => h(App)
-}).$mount('#app')
-```
 
 ### Connecting the front end and back end
 

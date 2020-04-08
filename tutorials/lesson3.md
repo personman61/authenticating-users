@@ -393,7 +393,14 @@ new Vue({
 
 ### Registration event handler
 
-Next, add an event handler in `HomePage.vue` for the registration form:
+Next, import `axios` at the start of `HomePage.vue`:
+
+```javascript
+<script>
+import axios from 'axios';
+```
+
+Then, add an event handler in `HomePage.vue` for the registration form:
 
 ```javascript
   methods: {

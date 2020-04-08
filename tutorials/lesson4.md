@@ -156,7 +156,14 @@ This will allow other modules to use the middleware to check for valid users.
 
 ## Front End
 
-To use this on the front end, add a `created()` hook in `Home.vue`, right above the computed property:
+To use this on the front end, first import `axios` in `Home.vue`:
+
+```javascript
+<script>
+import axios from 'axios';
+```
+
+Then add a `created()` hook in `Home.vue`, right above the computed property:
 
 ```javascript
   async created() {

@@ -31,6 +31,13 @@ Add a button to log the user out in `MyTickets.vue`:
 
 Note that we could put this in a menu that is shared across all pages in our app; we're being a bit lazy here.
 
+Import `axios` in this component:
+
+```javascript
+<script>
+import axios from 'axios';
+```
+
 Now add an event handler for this button:
 
 ```javascript

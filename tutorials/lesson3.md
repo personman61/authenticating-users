@@ -536,6 +536,7 @@ export default {
     }
   }
 }
+</script>
 ```
 
 This gets the current user's information so we can display it in the template.
